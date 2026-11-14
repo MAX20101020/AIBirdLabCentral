@@ -9,9 +9,15 @@ services:
       - "8001:8001"
     env_file:
       - .env
+    volumes:
+      - D:/bird_shared:/app/shared_uploads
     depends_on:
       central_db:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bird_net
     restart: always
 
   central_db:
@@ -30,7 +36,31 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - bird_net
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: aibirdlab_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bird_net
     restart: always
 
 volumes:
   postgres_data:
+    
+networks:
+  bird_net:
+    external: true
